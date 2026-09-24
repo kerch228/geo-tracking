@@ -383,10 +383,11 @@
         const timestamp = document.createElement("time");
         timestamp.textContent = new Date().toLocaleTimeString();
         item.append(label, content, timestamp);
-        elements.events.prepend(item);
+        elements.events.append(item);
         while (elements.events.children.length > 50) {
-          elements.events.lastElementChild.remove();
+          elements.events.firstElementChild.remove();
         }
+        elements.events.scrollTop = elements.events.scrollHeight;
       }
 
       function clearMapData() {

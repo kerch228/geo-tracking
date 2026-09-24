@@ -268,6 +268,27 @@ def test_non_finite_radius_is_rejected(radius: float) -> None:
         )
 
 
+@pytest.mark.parametrize("radius", ["Infinity", "-Infinity", "NaN"])
+def test_non_finite_json_radius_returns_validation_error(
+    client: tuple[TestClient, AsyncMock],
+    radius: str,
+) -> None:
+    test_client, _ = client
+
+    response = test_client.post(
+        "/geozones",
+        headers={"X-User-Id": USER_A, "Content-Type": "application/json"},
+        content=(
+            '{"name":"Office","center_lat":50.4501,"center_lng":30.5234,'
+            f'"radius_meters":{radius}'
+            "}"
+        ),
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["type"] == "finite_number"
+
+
 def test_missing_user_header(
     client: tuple[TestClient, AsyncMock],
     geozone_payload: dict[str, Any],

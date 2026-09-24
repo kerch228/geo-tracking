@@ -467,7 +467,7 @@ general guarantee for every production dataset or deployment procedure.
 
 ## Testing and Verification
 
-The completed repository passes **82 tests**, including real PostgreSQL/PostGIS
+The completed repository passes **85 tests**, including real PostgreSQL/PostGIS
 model and geofence integration tests, REST isolation tests, location race and
 idempotency tests, WebSocket integration tests, migration tests, generator unit
 tests, and opt-in local concurrency tests.
