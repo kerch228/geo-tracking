@@ -91,6 +91,24 @@ def test_device_location_can_be_persisted() -> None:
             radius_meters=0,
         ),
         Geozone(
+            user_id="user",
+            name="Infinite radius",
+            center=make_geography_point(longitude=30.5, latitude=50.4),
+            radius_meters=float("inf"),
+        ),
+        Geozone(
+            user_id="user",
+            name="Negative infinite radius",
+            center=make_geography_point(longitude=30.5, latitude=50.4),
+            radius_meters=float("-inf"),
+        ),
+        Geozone(
+            user_id="user",
+            name="NaN radius",
+            center=make_geography_point(longitude=30.5, latitude=50.4),
+            radius_meters=float("nan"),
+        ),
+        Geozone(
             user_id=" ",
             name="Invalid user",
             center=make_geography_point(longitude=30.5, latitude=50.4),
@@ -109,7 +127,15 @@ def test_device_location_can_be_persisted() -> None:
             point=make_geography_point(longitude=30.5, latitude=50.4),
         ),
     ],
-    ids=["radius", "user-id", "name-length", "device-id"],
+    ids=[
+        "radius",
+        "infinite-radius",
+        "negative-infinite-radius",
+        "nan-radius",
+        "user-id",
+        "name-length",
+        "device-id",
+    ],
 )
 def test_database_constraints_reject_invalid_values(invalid_model: object) -> None:
     async def scenario() -> None:

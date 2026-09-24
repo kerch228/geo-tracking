@@ -5,11 +5,12 @@ from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 from pytest import MonkeyPatch
 
 from app.db.session import get_db_session
 from app.main import app
-from app.schemas.geozone import GeozoneRead
+from app.schemas.geozone import GeozoneCreate, GeozoneRead
 from app.services import geozones as geozone_service
 
 USER_A = "user-a"
@@ -254,6 +255,17 @@ def test_invalid_radius(
     )
 
     assert response.status_code == 422
+
+
+@pytest.mark.parametrize("radius", [float("inf"), float("-inf"), float("nan")])
+def test_non_finite_radius_is_rejected(radius: float) -> None:
+    with pytest.raises(ValidationError, match="finite number"):
+        GeozoneCreate(
+            name="Office",
+            center_lat=50.4501,
+            center_lng=30.5234,
+            radius_meters=radius,
+        )
 
 
 def test_missing_user_header(

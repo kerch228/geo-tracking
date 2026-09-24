@@ -7,7 +7,7 @@ class GeozoneWrite(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     center_lat: float = Field(ge=-90, le=90)
     center_lng: float = Field(ge=-180, le=180)
-    radius_meters: float = Field(gt=0)
+    radius_meters: float = Field(gt=0, allow_inf_nan=False)
 
     @field_validator("name")
     @classmethod

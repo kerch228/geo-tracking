@@ -12,6 +12,10 @@ class Geozone(Base):
     __tablename__ = "geozones"
     __table_args__ = (
         CheckConstraint("radius_meters > 0", name="ck_geozones_radius_positive"),
+        CheckConstraint(
+            "radius_meters < 'Infinity'::double precision",
+            name="ck_geozones_radius_finite",
+        ),
         CheckConstraint("char_length(btrim(user_id)) > 0", name="ck_geozones_user_id_not_empty"),
         Index("ix_geozones_user_id", "user_id"),
         Index("ix_geozones_center_gist", "center", postgresql_using="gist"),
