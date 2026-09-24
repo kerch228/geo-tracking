@@ -7,7 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.spatial import make_geography_point
 from app.models import DeviceLocation
 from app.schemas.location import LocationCreate
+from app.schemas.websocket import LocationMessage
 from app.services.geofence import GeofenceService
+from app.websocket.manager import connection_manager
 
 IngestionStatus = Literal["accepted", "duplicate", "ignored_stale"]
 
@@ -56,4 +58,15 @@ async def ingest_location(
         )
 
     await session.commit()
+    if status == "accepted":
+        message = LocationMessage(
+            device_id=data.device_id,
+            lat=data.latitude,
+            lng=data.longitude,
+            timestamp=data.timestamp,
+        )
+        await connection_manager.broadcast(
+            user_id,
+            message.model_dump(mode="json"),
+        )
     return status

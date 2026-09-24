@@ -51,6 +51,18 @@ The first event and events newer than the stored timestamp return `201` with
 `status: "ignored_stale"`. Replayed and stale events do not replace current
 coordinates or trigger geofence matching.
 
+Live location updates are available over WebSocket:
+
+```text
+ws://localhost:8000/ws?user_id=user-123
+```
+
+Every active connection registered for that user receives accepted location
+events as `{"type":"location","device_id":"device-1","lat":50.4501,
+"lng":30.5234,"timestamp":"2026-09-24T12:00:00Z"}`. Connections are held in
+process memory, so this phase supports one API process; cross-process fan-out is
+intentionally deferred until a shared broker is introduced.
+
 Compose waits for the PostgreSQL healthcheck before starting the API. The API
 also retries its own `SELECT 1` readiness check before accepting requests.
 
