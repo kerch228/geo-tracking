@@ -1,3 +1,6 @@
 """SQLAlchemy domain models."""
 
-# Import model modules here so Alembic can discover their metadata.
+from app.models.device_location import DeviceLocation
+from app.models.geozone import Geozone
+
+__all__ = ["DeviceLocation", "Geozone"]

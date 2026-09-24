@@ -2,7 +2,7 @@
 
 Phases 1 and 2 provide the FastAPI project foundation, async SQLAlchemy setup,
 Alembic configuration, PostgreSQL/PostGIS infrastructure, database readiness
-handling, and a health endpoint. Domain models and business logic are
+handling, spatial domain models, and a health endpoint. API business logic is
 intentionally deferred.
 
 ## Requirements
@@ -55,6 +55,12 @@ python -m compileall -q app tests generator.py
 alembic upgrade head --sql
 ```
 
+Run the PostGIS integration tests against a disposable configured database with:
+
+```bash
+RUN_DATABASE_INTEGRATION_TESTS=true pytest tests/test_postgis_integration.py
+```
+
 ## Database migrations
 
 Create a migration after adding domain models:
@@ -63,6 +69,10 @@ Create a migration after adding domain models:
 alembic revision --autogenerate -m "describe change"
 alembic upgrade head
 ```
+
+The first migration enables PostGIS and creates `geozones` and
+`device_locations`. Coordinates are stored as WGS84 geography points; the point
+order is longitude followed by latitude.
 
 ## Next phases
 
