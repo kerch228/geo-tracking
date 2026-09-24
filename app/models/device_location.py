@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from geoalchemy2 import Geography
-from geoalchemy2.elements import WKBElement
+from geoalchemy2.elements import WKBElement, WKTElement
 from sqlalchemy import CheckConstraint, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -22,7 +22,7 @@ class DeviceLocation(Base):
         DateTime(timezone=True),
         primary_key=True,
     )
-    point: Mapped[WKBElement] = mapped_column(
+    point: Mapped[WKBElement | WKTElement] = mapped_column(
         Geography(geometry_type="POINT", srid=4326, spatial_index=False),
         nullable=False,
     )

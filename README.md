@@ -30,6 +30,12 @@ Expected response:
 {"status":"ok"}
 ```
 
+Geozone requests use the simplified assignment identity header:
+
+```bash
+curl -H "X-User-Id: user-123" http://localhost:8000/geozones
+```
+
 Compose waits for the PostgreSQL healthcheck before starting the API. The API
 also retries its own `SELECT 1` readiness check before accepting requests.
 

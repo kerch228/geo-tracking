@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from geoalchemy2 import Geography
-from geoalchemy2.elements import WKBElement
+from geoalchemy2.elements import WKBElement, WKTElement
 from sqlalchemy import BigInteger, CheckConstraint, DateTime, Index, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -20,7 +20,7 @@ class Geozone(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     user_id: Mapped[str] = mapped_column(String(128), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    center: Mapped[WKBElement] = mapped_column(
+    center: Mapped[WKBElement | WKTElement] = mapped_column(
         Geography(geometry_type="POINT", srid=4326, spatial_index=False),
         nullable=False,
     )
