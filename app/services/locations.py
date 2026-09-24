@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.spatial import make_geography_point
 from app.models import DeviceLocation
 from app.schemas.location import LocationCreate
-from app.schemas.websocket import LocationMessage
+from app.schemas.websocket import AlertMessage, LocationMessage
 from app.services.geofence import GeofenceService
 from app.websocket.manager import connection_manager
 
@@ -48,25 +48,32 @@ async def ingest_location(
         status: IngestionStatus = (
             "duplicate" if current_timestamp == data.timestamp else "ignored_stale"
         )
-    else:
-        status = "accepted"
-        await GeofenceService.find_matching_zones(
-            session,
-            user_id=user_id,
-            latitude=data.latitude,
-            longitude=data.longitude,
-        )
-
     await session.commit()
-    if status == "accepted":
-        message = LocationMessage(
+    if stored_timestamp is None:
+        return status
+
+    matching_zones = await GeofenceService.find_matching_zones(
+        session,
+        user_id=user_id,
+        latitude=data.latitude,
+        longitude=data.longitude,
+    )
+    location_message = LocationMessage(
+        device_id=data.device_id,
+        lat=data.latitude,
+        lng=data.longitude,
+        timestamp=data.timestamp,
+    )
+    messages = [location_message.model_dump(mode="json")]
+    messages.extend(
+        AlertMessage(
             device_id=data.device_id,
+            zone_id=str(zone.id),
+            zone_name=zone.name,
             lat=data.latitude,
             lng=data.longitude,
-            timestamp=data.timestamp,
-        )
-        await connection_manager.broadcast(
-            user_id,
-            message.model_dump(mode="json"),
-        )
-    return status
+        ).model_dump(mode="json")
+        for zone in matching_zones
+    )
+    await connection_manager.broadcast_many(user_id, messages)
+    return "accepted"

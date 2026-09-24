@@ -27,14 +27,25 @@ class WebSocketManager:
                 self._connections.pop(user_id, None)
 
     async def broadcast(self, user_id: str, message: dict[str, Any]) -> None:
+        await self.broadcast_many(user_id, [message])
+
+    async def broadcast_many(
+        self,
+        user_id: str,
+        messages: list[dict[str, Any]],
+    ) -> None:
         async with self._lock:
             connections = tuple(self._connections.get(user_id, ()))
 
-        if not connections:
+        if not connections or not messages:
             return
 
+        async def send_messages(websocket: WebSocket) -> None:
+            for message in messages:
+                await websocket.send_json(message)
+
         results = await asyncio.gather(
-            *(websocket.send_json(message) for websocket in connections),
+            *(send_messages(websocket) for websocket in connections),
             return_exceptions=True,
         )
         failed = [

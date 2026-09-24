@@ -10,3 +10,12 @@ class LocationMessage(BaseModel):
     lat: float
     lng: float
     timestamp: datetime
+
+
+class AlertMessage(BaseModel):
+    type: Literal["alert"] = "alert"
+    device_id: str
+    zone_id: str
+    zone_name: str
+    lat: float
+    lng: float

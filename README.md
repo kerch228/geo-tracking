@@ -59,9 +59,12 @@ ws://localhost:8000/ws?user_id=user-123
 
 Every active connection registered for that user receives accepted location
 events as `{"type":"location","device_id":"device-1","lat":50.4501,
-"lng":30.5234,"timestamp":"2026-09-24T12:00:00Z"}`. Connections are held in
-process memory, so this phase supports one API process; cross-process fan-out is
-intentionally deferred until a shared broker is introduced.
+"lng":30.5234,"timestamp":"2026-09-24T12:00:00Z"}`. If PostGIS finds matching
+geozones, the location message is followed by one alert per zone containing its
+ID and name. Duplicate and stale events produce no WebSocket messages.
+Connections are held in process memory, so this phase supports one API process;
+cross-process fan-out is intentionally deferred until a shared broker is
+introduced.
 
 Compose waits for the PostgreSQL healthcheck before starting the API. The API
 also retries its own `SELECT 1` readiness check before accepting requests.
@@ -113,5 +116,4 @@ distance arguments are interpreted in meters.
 
 ## Next phases
 
-- Add WebSocket connection management and real-time broadcasts.
 - Implement the 10,000-device asynchronous generator.

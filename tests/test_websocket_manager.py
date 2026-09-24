@@ -72,10 +72,13 @@ def test_broken_connection_is_removed_without_blocking_healthy_socket() -> None:
         await manager.connect("user-123", as_websocket(broken))
         await manager.connect("user-123", as_websocket(healthy))
 
-        message = {"type": "location", "device_id": "device-1"}
-        await manager.broadcast("user-123", message)
+        messages = [
+            {"type": "location", "device_id": "device-1"},
+            {"type": "alert", "device_id": "device-1", "zone_id": "1"},
+        ]
+        await manager.broadcast_many("user-123", messages)
 
-        assert healthy.messages == [message]
+        assert healthy.messages == messages
         assert await manager.connection_count("user-123") == 1
 
     asyncio.run(scenario())
