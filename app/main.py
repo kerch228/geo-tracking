@@ -1,7 +1,9 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.api.router import api_router
 from app.core.config import settings
@@ -24,6 +26,11 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     application.include_router(api_router)
+    application.mount(
+        "/demo",
+        StaticFiles(directory=Path(__file__).parent.parent / "web", html=True),
+        name="demo",
+    )
     return application
 
 

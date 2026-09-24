@@ -160,6 +160,26 @@ curl -X POST http://localhost:8000/locations \
 The connected client receives a `location` message followed by an `alert`
 because the sample coordinate is inside the sample geozone.
 
+## Demo UI
+
+The optional demonstration page is plain HTML, CSS, and JavaScript with Leaflet
+loaded from a CDN. It is not part of the core backend requirements and has no
+build step or additional backend dependencies.
+
+Start the backend and apply migrations as described above, then open:
+
+```text
+http://localhost:8000/demo/
+```
+
+Enter a `user_id` and select **Connect**. The page opens
+`WS /ws?user_id=...` and loads that user's existing geozones. Use **Create
+geozone** to send `POST /geozones`; the resulting zone appears as a circle on
+the Leaflet map. Use **Send location** to send `POST /locations` with a current
+UTC timestamp. Accepted locations appear as device markers, and matching
+geofence alerts appear in the live event list. The connection indicator shows
+the current WebSocket status.
+
 ## API
 
 Interactive OpenAPI documentation is available at `http://localhost:8000/docs`

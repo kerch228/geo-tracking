@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Geo-Tracking Demo</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      crossorigin=""
+    >
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        color: #17212b;
+        background: #eef2f5;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .app {
+        display: grid;
+        grid-template-columns: minmax(290px, 360px) minmax(0, 1fr);
+        height: 100vh;
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        z-index: 500;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 20px;
+        background: #ffffff;
+        border-right: 1px solid #d8e0e7;
+      }
+
+      h1 {
+        margin: 0 0 4px;
+        font-size: 24px;
+        line-height: 1.2;
+        letter-spacing: 0;
+      }
+
+      .subtitle {
+        margin: 0 0 20px;
+        color: #5d6873;
+        font-size: 14px;
+      }
+
+      section {
+        padding: 16px 0;
+        border-top: 1px solid #e4e9ee;
+      }
+
+      section:first-of-type {
+        padding-top: 0;
+        border-top: 0;
+      }
+
+      h2 {
+        margin: 0 0 12px;
+        font-size: 15px;
+        letter-spacing: 0;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 10px;
+        color: #3d4852;
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      input {
+        width: 100%;
+        height: 38px;
+        margin-top: 5px;
+        padding: 0 10px;
+        color: #17212b;
+        background: #ffffff;
+        border: 1px solid #b8c3cc;
+        border-radius: 4px;
+      }
+
+      input:focus {
+        border-color: #147d64;
+        outline: 2px solid #bce7dc;
+        outline-offset: 1px;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      button {
+        min-height: 38px;
+        padding: 8px 13px;
+        color: #ffffff;
+        background: #147d64;
+        border: 1px solid #147d64;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      button:hover {
+        background: #0f6752;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
+      .secondary {
+        color: #27333e;
+        background: #ffffff;
+        border-color: #aeb9c2;
+      }
+
+      .secondary:hover {
+        background: #f2f5f7;
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .status-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 10px 0 0;
+        color: #59646e;
+        font-size: 13px;
+      }
+
+      .status-dot {
+        width: 9px;
+        height: 9px;
+        flex: 0 0 auto;
+        border-radius: 50%;
+        background: #87929c;
+      }
+
+      .status-dot.connected {
+        background: #18845f;
+      }
+
+      .status-dot.error {
+        background: #c43c3c;
+      }
+
+      .hint,
+      .form-message {
+        margin: 8px 0 0;
+        color: #68737d;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .form-message.error {
+        color: #a72d2d;
+      }
+
+      .events {
+        max-height: 240px;
+        overflow-y: auto;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .event {
+        padding: 9px 0;
+        border-top: 1px solid #edf0f2;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .event:first-child {
+        border-top: 0;
+      }
+
+      .event strong {
+        display: inline-block;
+        margin-right: 5px;
+        color: #147d64;
+        text-transform: uppercase;
+      }
+
+      .event.alert strong,
+      .event.error strong {
+        color: #b33636;
+      }
+
+      .event time {
+        display: block;
+        color: #7a858e;
+      }
+
+      #map {
+        width: 100%;
+        height: 100vh;
+        min-height: 560px;
+        background: #dce5e9;
+      }
+
+      .leaflet-popup-content {
+        line-height: 1.5;
+      }
+
+      @media (max-width: 760px) {
+        .app {
+          grid-template-columns: 1fr;
+          height: auto;
+        }
+
+        .sidebar {
+          height: auto;
+          max-height: none;
+          border-right: 0;
+          border-bottom: 1px solid #d8e0e7;
+        }
+
+        #map {
+          height: 62vh;
+          min-height: 420px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <aside class="sidebar">
+        <h1>Geo-Tracking Demo</h1>
+        <p class="subtitle">Optional browser client for the take-home backend</p>
+
+        <section>
+          <h2>Connection</h2>
+          <label>
+            User ID
+            <input id="user-id" value="user-123" maxlength="128" autocomplete="off">
+          </label>
+          <div class="actions">
+            <button id="connect-button" type="button">Connect</button>
+            <button id="disconnect-button" class="secondary" type="button" disabled>
+              Disconnect
+            </button>
+          </div>
+          <p class="status-line">
+            <span id="status-dot" class="status-dot"></span>
+            <span id="status-text">Disconnected</span>
+          </p>
+        </section>
+
+        <section>
+          <h2>Create geozone</h2>
+          <form id="zone-form">
+            <label>
+              Name
+              <input id="zone-name" value="Office" maxlength="255" required>
+            </label>
+            <div class="row">
+              <label>
+                Latitude
+                <input id="zone-lat" type="number" value="50.4501" min="-90" max="90" step="any" required>
+              </label>
+              <label>
+                Longitude
+                <input id="zone-lng" type="number" value="30.5234" min="-180" max="180" step="any" required>
+              </label>
+            </div>
+            <label>
+              Radius, meters
+              <input id="zone-radius" type="number" value="500" min="0.01" step="any" required>
+            </label>
+            <button type="submit">Create geozone</button>
+            <p id="zone-message" class="form-message"></p>
+          </form>
+        </section>
+
+        <section>
+          <h2>Send test location</h2>
+          <form id="location-form">
+            <label>
+              Device ID
+              <input id="device-id" value="device-1" maxlength="128" required>
+            </label>
+            <div class="row">
+              <label>
+                Latitude
+                <input id="location-lat" type="number" value="50.4501" min="-90" max="90" step="any" required>
+              </label>
+              <label>
+                Longitude
+                <input id="location-lng" type="number" value="30.5234" min="-180" max="180" step="any" required>
+              </label>
+            </div>
+            <button type="submit">Send location</button>
+            <p class="hint">A current UTC timestamp is generated for each request.</p>
+            <p id="location-message" class="form-message"></p>
+          </form>
+        </section>
+
+        <section>
+          <h2>Live events</h2>
+          <ul id="events" class="events" aria-live="polite"></ul>
+        </section>
+      </aside>
+      <div id="map" aria-label="Device locations and geozones"></div>
+    </main>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      crossorigin=""
+    ></script>
+    <script>
+      "use strict";
+
+      const map = L.map("map").setView([50.4501, 30.5234], 12);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors",
+      }).addTo(map);
+
+      const elements = {
+        userId: document.querySelector("#user-id"),
+        connectButton: document.querySelector("#connect-button"),
+        disconnectButton: document.querySelector("#disconnect-button"),
+        statusDot: document.querySelector("#status-dot"),
+        statusText: document.querySelector("#status-text"),
+        zoneForm: document.querySelector("#zone-form"),
+        zoneMessage: document.querySelector("#zone-message"),
+        locationForm: document.querySelector("#location-form"),
+        locationMessage: document.querySelector("#location-message"),
+        events: document.querySelector("#events"),
+      };
+
+      const deviceMarkers = new Map();
+      const zoneCircles = new Map();
+      let socket = null;
+
+      function currentUserId() {
+        return elements.userId.value.trim();
+      }
+
+      function setStatus(kind, text) {
+        elements.statusDot.className = `status-dot ${kind}`.trim();
+        elements.statusText.textContent = text;
+        elements.connectButton.disabled = kind === "connected" || kind === "connecting";
+        elements.disconnectButton.disabled = kind !== "connected" && kind !== "connecting";
+      }
+
+      function showFormMessage(element, text, isError = false) {
+        element.textContent = text;
+        element.className = `form-message${isError ? " error" : ""}`;
+      }
+
+      function addEvent(type, text) {
+        const item = document.createElement("li");
+        item.className = `event ${type}`;
+        const label = document.createElement("strong");
+        label.textContent = type;
+        const content = document.createTextNode(text);
+        const timestamp = document.createElement("time");
+        timestamp.textContent = new Date().toLocaleTimeString();
+        item.append(label, content, timestamp);
+        elements.events.prepend(item);
+        while (elements.events.children.length > 50) {
+          elements.events.lastElementChild.remove();
+        }
+      }
+
+      function clearMapData() {
+        for (const marker of deviceMarkers.values()) {
+          marker.remove();
+        }
+        for (const circle of zoneCircles.values()) {
+          circle.remove();
+        }
+        deviceMarkers.clear();
+        zoneCircles.clear();
+      }
+
+      function drawZone(zone) {
+        const existing = zoneCircles.get(String(zone.id));
+        if (existing) {
+          existing.remove();
+        }
+        const circle = L.circle([zone.center_lat, zone.center_lng], {
+          radius: zone.radius_meters,
+          color: "#147d64",
+          fillColor: "#46a58d",
+          fillOpacity: 0.16,
+          weight: 2,
+        })
+          .bindPopup(`<strong>${escapeHtml(zone.name)}</strong><br>${zone.radius_meters} m`)
+          .addTo(map);
+        zoneCircles.set(String(zone.id), circle);
+      }
+
+      function drawDevice(message) {
+        const position = [message.lat, message.lng];
+        let marker = deviceMarkers.get(message.device_id);
+        if (marker) {
+          marker.setLatLng(position);
+        } else {
+          marker = L.marker(position).addTo(map);
+          deviceMarkers.set(message.device_id, marker);
+        }
+        marker.bindPopup(
+          `<strong>${escapeHtml(message.device_id)}</strong><br>${message.lat}, ${message.lng}`,
+        );
+      }
+
+      function escapeHtml(value) {
+        const node = document.createElement("span");
+        node.textContent = String(value);
+        return node.innerHTML;
+      }
+
+      async function apiRequest(path, options = {}) {
+        const userId = currentUserId();
+        if (!userId) {
+          throw new Error("Enter a user ID first.");
+        }
+        const response = await fetch(path, {
+          ...options,
+          headers: {
+            "Content-Type": "application/json",
+            "X-User-Id": userId,
+            ...(options.headers || {}),
+          },
+        });
+        if (!response.ok) {
+          let detail = `${response.status} ${response.statusText}`;
+          try {
+            const body = await response.json();
+            detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
+          } catch (_) {
+            // Keep the HTTP status when the body is not JSON.
+          }
+          throw new Error(detail);
+        }
+        return response.status === 204 ? null : response.json();
+      }
+
+      async function loadZones() {
+        const zones = await apiRequest("/geozones");
+        for (const circle of zoneCircles.values()) {
+          circle.remove();
+        }
+        zoneCircles.clear();
+        zones.forEach(drawZone);
+        addEvent("system", `Loaded ${zones.length} geozone(s).`);
+      }
+
+      function handleSocketMessage(event) {
+        let message;
+        try {
+          message = JSON.parse(event.data);
+        } catch (_) {
+          addEvent("error", "Received a non-JSON WebSocket message.");
+          return;
+        }
+
+        if (message.type === "location") {
+          drawDevice(message);
+          addEvent(
+            "location",
+            `${message.device_id} at ${message.lat.toFixed(5)}, ${message.lng.toFixed(5)}`,
+          );
+          return;
+        }
+        if (message.type === "alert") {
+          addEvent("alert", `${message.device_id} matched ${message.zone_name}.`);
+          return;
+        }
+        addEvent("system", `Unknown message: ${event.data}`);
+      }
+
+      async function connect() {
+        const userId = currentUserId();
+        if (!userId) {
+          setStatus("error", "User ID is required");
+          return;
+        }
+        if (socket) {
+          socket.close();
+        }
+        clearMapData();
+        elements.events.replaceChildren();
+        setStatus("connecting", "Connecting...");
+
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        socket = new WebSocket(
+          `${protocol}//${window.location.host}/ws?user_id=${encodeURIComponent(userId)}`,
+        );
+        socket.addEventListener("open", async () => {
+          setStatus("connected", `Connected as ${userId}`);
+          addEvent("system", `WebSocket connected for ${userId}.`);
+          try {
+            await loadZones();
+          } catch (error) {
+            addEvent("error", `Could not load geozones: ${error.message}`);
+          }
+        });
+        socket.addEventListener("message", handleSocketMessage);
+        socket.addEventListener("error", () => {
+          setStatus("error", "WebSocket error");
+          addEvent("error", "WebSocket connection error.");
+        });
+        socket.addEventListener("close", () => {
+          socket = null;
+          setStatus("", "Disconnected");
+          addEvent("system", "WebSocket disconnected.");
+        });
+      }
+
+      elements.connectButton.addEventListener("click", connect);
+      elements.disconnectButton.addEventListener("click", () => socket?.close());
+
+      elements.zoneForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        showFormMessage(elements.zoneMessage, "Creating...");
+        try {
+          const zone = await apiRequest("/geozones", {
+            method: "POST",
+            body: JSON.stringify({
+              name: document.querySelector("#zone-name").value,
+              center_lat: Number(document.querySelector("#zone-lat").value),
+              center_lng: Number(document.querySelector("#zone-lng").value),
+              radius_meters: Number(document.querySelector("#zone-radius").value),
+            }),
+          });
+          drawZone(zone);
+          map.fitBounds(zoneCircles.get(String(zone.id)).getBounds(), { maxZoom: 15 });
+          showFormMessage(elements.zoneMessage, `Created ${zone.name}.`);
+          addEvent("system", `Created geozone ${zone.name}.`);
+        } catch (error) {
+          showFormMessage(elements.zoneMessage, error.message, true);
+        }
+      });
+
+      elements.locationForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        showFormMessage(elements.locationMessage, "Sending...");
+        try {
+          const result = await apiRequest("/locations", {
+            method: "POST",
+            body: JSON.stringify({
+              device_id: document.querySelector("#device-id").value,
+              latitude: Number(document.querySelector("#location-lat").value),
+              longitude: Number(document.querySelector("#location-lng").value),
+              timestamp: new Date().toISOString(),
+            }),
+          });
+          showFormMessage(elements.locationMessage, `Result: ${result.status}.`);
+          if (result.status !== "accepted") {
+            addEvent("system", `Location result: ${result.status}.`);
+          }
+        } catch (error) {
+          showFormMessage(elements.locationMessage, error.message, true);
+        }
+      });
+
+      window.addEventListener("beforeunload", () => socket?.close());
+    </script>
+  </body>
+</html>
