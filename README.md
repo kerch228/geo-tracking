@@ -80,6 +80,10 @@ The first migration enables PostGIS and creates `geozones` and
 `device_locations`. Coordinates are stored as WGS84 geography points; the point
 order is longitude followed by latitude.
 
+`GeofenceService.find_matching_zones` performs user-scoped containment matching
+inside PostGIS with `ST_DWithin(center, device_point, radius_meters)`. Geography
+distance arguments are interpreted in meters.
+
 ## Next phases
 
 - Add user-scoped geozone and device-location models.

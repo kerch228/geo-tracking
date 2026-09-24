@@ -65,6 +65,7 @@ def run_migrations_offline() -> None:
 
 def do_run_migrations(connection: Connection) -> None:
     connection.execute(text("SET search_path TO public"))
+    connection.commit()
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
