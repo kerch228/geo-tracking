@@ -5,13 +5,16 @@ from fastapi import FastAPI
 
 from app.api.router import api_router
 from app.core.config import settings
-from app.db.session import close_database
+from app.db.session import close_database, wait_for_database
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    yield
-    await close_database()
+    await wait_for_database()
+    try:
+        yield
+    finally:
+        await close_database()
 
 
 def create_app() -> FastAPI:

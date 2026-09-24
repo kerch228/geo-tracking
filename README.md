@@ -1,8 +1,9 @@
 # Real-Time Geo-Tracking Service
 
-Phase 1 provides the FastAPI project foundation, async SQLAlchemy setup, Alembic
-configuration, PostgreSQL/PostGIS infrastructure, and a health endpoint. Domain
-models and business logic are intentionally deferred.
+Phases 1 and 2 provide the FastAPI project foundation, async SQLAlchemy setup,
+Alembic configuration, PostgreSQL/PostGIS infrastructure, database readiness
+handling, and a health endpoint. Domain models and business logic are
+intentionally deferred.
 
 ## Requirements
 
@@ -13,6 +14,7 @@ models and business logic are intentionally deferred.
 
 ```bash
 cp .env.example .env
+# Replace POSTGRES_PASSWORD in .env before starting the stack.
 docker compose up --build
 ```
 
@@ -28,6 +30,9 @@ Expected response:
 {"status":"ok"}
 ```
 
+Compose waits for the PostgreSQL healthcheck before starting the API. The API
+also retries its own `SELECT 1` readiness check before accepting requests.
+
 ## Local development
 
 ```bash
@@ -37,12 +42,17 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
+For local development, keep `DB_HOST=localhost`. Docker Compose overrides it to
+the internal service hostname `db`.
+
 ## Verification
 
 ```bash
 pytest
 ruff check .
 mypy app tests generator.py
+python -m compileall -q app tests generator.py
+alembic upgrade head --sql
 ```
 
 ## Database migrations
