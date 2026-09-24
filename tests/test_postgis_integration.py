@@ -65,6 +65,7 @@ def test_device_location_can_be_persisted() -> None:
         timestamp = datetime.now(timezone.utc)
         async with async_session_factory() as session:
             location = DeviceLocation(
+                user_id="user",
                 device_id=device_id,
                 timestamp=timestamp,
                 point=make_geography_point(longitude=30.5234, latitude=50.4501),
@@ -72,7 +73,7 @@ def test_device_location_can_be_persisted() -> None:
             session.add(location)
             await session.flush()
 
-            persisted = await session.get(DeviceLocation, (device_id, timestamp))
+            persisted = await session.get(DeviceLocation, ("user", device_id))
             assert persisted is not None
             assert persisted.point is not None
             await session.rollback()
@@ -102,6 +103,7 @@ def test_device_location_can_be_persisted() -> None:
             radius_meters=10,
         ),
         DeviceLocation(
+            user_id="user",
             device_id=" ",
             timestamp=datetime.now(timezone.utc),
             point=make_geography_point(longitude=30.5, latitude=50.4),

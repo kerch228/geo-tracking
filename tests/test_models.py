@@ -31,11 +31,11 @@ def test_geozone_declares_only_required_indexes() -> None:
     assert spatial_index.dialect_options["postgresql"]["using"] == "gist"
 
 
-def test_device_location_primary_key_supports_device_time_queries() -> None:
+def test_device_location_primary_key_stores_one_location_per_user_device() -> None:
     primary_key_columns = [column.name for column in DeviceLocation.__table__.primary_key]
     table = cast(Table, DeviceLocation.__table__)
 
-    assert primary_key_columns == ["device_id", "timestamp"]
+    assert primary_key_columns == ["user_id", "device_id"]
     assert not table.indexes
 
 

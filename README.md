@@ -36,6 +36,21 @@ Geozone requests use the simplified assignment identity header:
 curl -H "X-User-Id: user-123" http://localhost:8000/geozones
 ```
 
+Location ingestion uses the same identity header and stores one current location
+per user/device pair:
+
+```bash
+curl -X POST -H "Content-Type: application/json" -H "X-User-Id: user-123" \
+  http://localhost:8000/locations \
+  -d '{"device_id":"device-1","latitude":50.4501,"longitude":30.5234,"timestamp":"2026-09-24T12:00:00Z"}'
+```
+
+The first event and events newer than the stored timestamp return `201` with
+`status: "accepted"`. A replay with the same timestamp is idempotent and returns
+`200` with `status: "duplicate"`; an older event returns `200` with
+`status: "ignored_stale"`. Replayed and stale events do not replace current
+coordinates or trigger geofence matching.
+
 Compose waits for the PostgreSQL healthcheck before starting the API. The API
 also retries its own `SELECT 1` readiness check before accepting requests.
 
@@ -86,8 +101,5 @@ distance arguments are interpreted in meters.
 
 ## Next phases
 
-- Add user-scoped geozone and device-location models.
-- Add geozone CRUD and coordinate ingestion endpoints.
-- Add PostGIS proximity queries and indexes.
 - Add WebSocket connection management and real-time broadcasts.
 - Implement the 10,000-device asynchronous generator.
