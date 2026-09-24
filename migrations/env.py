@@ -1,7 +1,10 @@
+from collections.abc import MutableMapping
 from logging.config import fileConfig
+from typing import Literal
 
 from alembic import context
-from sqlalchemy import pool
+from sqlalchemy import pool, text
+from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 import app.models  # noqa: F401
@@ -20,6 +23,30 @@ config.set_main_option(
 )
 
 
+def include_name(
+    name: str | None,
+    type_: Literal[
+        "schema",
+        "table",
+        "column",
+        "index",
+        "unique_constraint",
+        "foreign_key_constraint",
+        "check_constraint",
+    ],
+    parent_names: MutableMapping[
+        Literal["schema_name", "table_name", "schema_qualified_table_name"],
+        str | None,
+    ],
+) -> bool:
+    if type_ == "schema":
+        return name in {None, "public"}
+    if type_ == "table":
+        schema_name = parent_names.get("schema_name")
+        return schema_name in {None, "public"} and name != "spatial_ref_sys"
+    return True
+
+
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
@@ -28,17 +55,22 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
+        include_schemas=True,
+        include_name=include_name,
     )
 
     with context.begin_transaction():
         context.run_migrations()
 
 
-def do_run_migrations(connection: object) -> None:
+def do_run_migrations(connection: Connection) -> None:
+    connection.execute(text("SET search_path TO public"))
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
         compare_type=True,
+        include_schemas=True,
+        include_name=include_name,
     )
 
     with context.begin_transaction():

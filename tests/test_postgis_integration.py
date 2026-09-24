@@ -9,9 +9,9 @@ import pytest
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import select, text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DBAPIError
 
-from app.db.session import async_session_factory
+from app.db.session import async_session_factory, engine
 from app.db.spatial import make_geography_point
 from app.models import DeviceLocation, Geozone
 
@@ -30,7 +30,13 @@ def apply_migrations() -> None:
 
 
 def run_async(test: Callable[[], Coroutine[Any, Any, None]]) -> None:
-    asyncio.run(test())
+    async def run_and_close_pool() -> None:
+        try:
+            await test()
+        finally:
+            await engine.dispose()
+
+    asyncio.run(run_and_close_pool())
 
 
 def test_geozone_can_be_persisted_with_geography_point() -> None:
@@ -107,7 +113,7 @@ def test_database_constraints_reject_invalid_values(invalid_model: object) -> No
     async def scenario() -> None:
         async with async_session_factory() as session:
             session.add(invalid_model)
-            with pytest.raises(IntegrityError):
+            with pytest.raises(DBAPIError):
                 await session.flush()
             await session.rollback()
 

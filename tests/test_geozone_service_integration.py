@@ -8,7 +8,7 @@ import pytest
 from alembic import command
 from alembic.config import Config
 
-from app.db.session import async_session_factory
+from app.db.session import async_session_factory, engine
 from app.schemas.geozone import GeozoneCreate, GeozoneUpdate
 from app.services import geozones as geozone_service
 
@@ -27,7 +27,13 @@ def apply_migrations() -> None:
 
 
 def run_async(coroutine: Coroutine[Any, Any, None]) -> None:
-    asyncio.run(coroutine)
+    async def run_and_close_pool() -> None:
+        try:
+            await coroutine
+        finally:
+            await engine.dispose()
+
+    asyncio.run(run_and_close_pool())
 
 
 def test_geozone_crud_and_user_isolation() -> None:
