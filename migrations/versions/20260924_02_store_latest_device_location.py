@@ -53,6 +53,12 @@ def downgrade() -> None:
         type_="check",
     )
     op.drop_constraint("device_locations_pkey", "device_locations", type_="primary")
+    op.execute(
+        "DELETE FROM device_locations duplicate USING device_locations keeper "
+        "WHERE duplicate.device_id = keeper.device_id "
+        "AND duplicate.timestamp = keeper.timestamp "
+        "AND duplicate.user_id > keeper.user_id"
+    )
     op.create_primary_key(
         "device_locations_pkey",
         "device_locations",

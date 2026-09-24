@@ -24,6 +24,24 @@ class FakeWebSocket:
         self.messages.append(message)
 
 
+class ConcurrentSendWebSocket(FakeWebSocket):
+    def __init__(self) -> None:
+        super().__init__()
+        self.sending = False
+        self.concurrent_send_detected = False
+
+    async def send_json(self, message: dict[str, Any]) -> None:
+        if self.sending:
+            self.concurrent_send_detected = True
+            raise RuntimeError("concurrent send")
+        self.sending = True
+        try:
+            await asyncio.sleep(0.01)
+            self.messages.append(message)
+        finally:
+            self.sending = False
+
+
 def as_websocket(socket: FakeWebSocket) -> WebSocket:
     return cast(WebSocket, cast(object, socket))
 
@@ -99,6 +117,26 @@ def test_broken_connection_is_removed_without_blocking_healthy_socket() -> None:
         await manager.broadcast_many("user-123", messages)
 
         assert healthy.messages == messages
+        assert await manager.connection_count("user-123") == 1
+
+    asyncio.run(scenario())
+
+
+def test_concurrent_broadcasts_are_serialized_per_user() -> None:
+    async def scenario() -> None:
+        manager = WebSocketManager()
+        socket = ConcurrentSendWebSocket()
+        await manager.connect("user-123", as_websocket(socket))
+
+        first = [{"type": "location", "device_id": "device-1"}]
+        second = [{"type": "location", "device_id": "device-2"}]
+        await asyncio.gather(
+            manager.broadcast_many("user-123", first),
+            manager.broadcast_many("user-123", second),
+        )
+
+        assert not socket.concurrent_send_detected
+        assert socket.messages == first + second
         assert await manager.connection_count("user-123") == 1
 
     asyncio.run(scenario())
