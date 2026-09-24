@@ -4,13 +4,16 @@ from typing import Any
 
 from fastapi import WebSocket
 
+from app.core.config import settings
+
 logger = logging.getLogger(__name__)
 
 
 class WebSocketManager:
-    def __init__(self) -> None:
+    def __init__(self, *, send_timeout_seconds: float = 5.0) -> None:
         self._connections: dict[str, set[WebSocket]] = {}
         self._lock = asyncio.Lock()
+        self._send_timeout_seconds = send_timeout_seconds
 
     async def connect(self, user_id: str, websocket: WebSocket) -> None:
         await websocket.accept()
@@ -45,7 +48,13 @@ class WebSocketManager:
                 await websocket.send_json(message)
 
         results = await asyncio.gather(
-            *(send_messages(websocket) for websocket in connections),
+            *(
+                asyncio.wait_for(
+                    send_messages(websocket),
+                    timeout=self._send_timeout_seconds,
+                )
+                for websocket in connections
+            ),
             return_exceptions=True,
         )
         failed = [
@@ -62,4 +71,6 @@ class WebSocketManager:
             return len(self._connections.get(user_id, ()))
 
 
-connection_manager = WebSocketManager()
+connection_manager = WebSocketManager(
+    send_timeout_seconds=settings.websocket_send_timeout_seconds,
+)

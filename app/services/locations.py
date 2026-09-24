@@ -75,5 +75,6 @@ async def ingest_location(
         ).model_dump(mode="json")
         for zone in matching_zones
     )
+    await session.rollback()
     await connection_manager.broadcast_many(user_id, messages)
     return "accepted"

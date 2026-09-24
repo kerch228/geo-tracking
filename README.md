@@ -97,6 +97,13 @@ Run the PostGIS integration tests against a disposable configured database with:
 RUN_DATABASE_INTEGRATION_TESTS=true pytest tests/test_postgis_integration.py
 ```
 
+The opt-in local concurrency benchmark is documented in
+[`docs/performance.md`](docs/performance.md) and can be run with:
+
+```bash
+RUN_LOAD_TESTS=true pytest -s tests/test_load_integration.py
+```
+
 ## Database migrations
 
 Create a migration after adding domain models:

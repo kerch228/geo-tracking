@@ -2,6 +2,7 @@
 testpaths = ["tests"]
 markers = [
     "integration: requires a real PostgreSQL/PostGIS database",
+    "load: local concurrency benchmark",
 ]
 
 [tool.ruff]

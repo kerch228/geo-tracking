@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     db_pool_recycle_seconds: int = Field(default=1800, ge=1)
     db_connect_max_attempts: int = Field(default=10, ge=1)
     db_connect_retry_seconds: float = Field(default=2.0, gt=0)
+    websocket_send_timeout_seconds: float = Field(default=5.0, gt=0)
 
     model_config = SettingsConfigDict(
         env_file=".env",

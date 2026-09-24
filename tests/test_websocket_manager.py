@@ -7,15 +7,18 @@ from app.websocket.manager import WebSocketManager
 
 
 class FakeWebSocket:
-    def __init__(self, *, broken: bool = False) -> None:
+    def __init__(self, *, broken: bool = False, delay_seconds: float = 0) -> None:
         self.accepted = False
         self.broken = broken
+        self.delay_seconds = delay_seconds
         self.messages: list[dict[str, Any]] = []
 
     async def accept(self) -> None:
         self.accepted = True
 
     async def send_json(self, message: dict[str, Any]) -> None:
+        if self.delay_seconds:
+            await asyncio.sleep(self.delay_seconds)
         if self.broken:
             raise RuntimeError("connection closed")
         self.messages.append(message)
@@ -40,6 +43,23 @@ def test_connect_and_disconnect_manage_user_connections() -> None:
         assert await manager.connection_count("user-123") == 1
         await manager.disconnect("user-123", as_websocket(second))
         assert await manager.connection_count("user-123") == 0
+
+    asyncio.run(scenario())
+
+
+def test_slow_connection_times_out_without_blocking_healthy_socket() -> None:
+    async def scenario() -> None:
+        manager = WebSocketManager(send_timeout_seconds=0.01)
+        slow = FakeWebSocket(delay_seconds=1)
+        healthy = FakeWebSocket()
+        await manager.connect("user-123", as_websocket(slow))
+        await manager.connect("user-123", as_websocket(healthy))
+
+        message = {"type": "location", "device_id": "device-1"}
+        await manager.broadcast("user-123", message)
+
+        assert healthy.messages == [message]
+        assert await manager.connection_count("user-123") == 1
 
     asyncio.run(scenario())
 

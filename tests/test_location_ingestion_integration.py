@@ -16,7 +16,10 @@ from app.db.session import async_session_factory, engine
 from app.db.spatial import make_geography_point
 from app.main import app
 from app.models import DeviceLocation, Geozone
+from app.schemas.location import LocationCreate
+from app.services import locations as location_service
 from app.services.geofence import GeofenceService
+from app.websocket.manager import connection_manager
 
 pytestmark = [
     pytest.mark.integration,
@@ -235,5 +238,43 @@ def test_same_device_id_is_isolated_by_user() -> None:
                 )
             )
             assert count == 2
+
+    run_async(scenario)
+
+
+def test_read_transaction_is_closed_before_websocket_broadcast(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def scenario() -> None:
+        user_id = f"transaction-{uuid4()}"
+        device_id = f"device-{uuid4()}"
+        timestamp = datetime(2026, 9, 24, 12, 0, tzinfo=timezone.utc)
+        async with async_session_factory() as session:
+            broadcast_called = False
+
+            async def assert_no_transaction(
+                broadcast_user_id: str,
+                messages: list[dict[str, Any]],
+            ) -> None:
+                nonlocal broadcast_called
+                broadcast_called = True
+                assert broadcast_user_id == user_id
+                assert messages[0]["type"] == "location"
+                assert not session.in_transaction()
+
+            monkeypatch.setattr(connection_manager, "broadcast_many", assert_no_transaction)
+            result = await location_service.ingest_location(
+                session,
+                user_id=user_id,
+                data=LocationCreate(
+                    device_id=device_id,
+                    latitude=50.4501,
+                    longitude=30.5234,
+                    timestamp=timestamp,
+                ),
+            )
+
+            assert result == "accepted"
+            assert broadcast_called
 
     run_async(scenario)
