@@ -104,6 +104,44 @@ The opt-in local concurrency benchmark is documented in
 RUN_LOAD_TESTS=true pytest -s tests/test_load_integration.py
 ```
 
+## Device generator
+
+`generator.py` is an asynchronous client-side simulator. The default command
+creates deterministic IDs from `device-00001` through `device-10000`, spreads
+their initial positions around Kyiv, and applies small reproducible movements
+before each update cycle:
+
+```bash
+python generator.py --devices 10000 --interval 3 --concurrency 100
+```
+
+Useful options:
+
+```text
+--url                 ingestion URL (default http://localhost:8000/locations)
+--devices             simulated device count (default 10000)
+--interval            seconds between cycle starts (default 3)
+--concurrency         maximum simultaneous requests (default 100)
+--duration            optional total runtime in seconds
+--timeout             HTTP timeout in seconds (default 10)
+--user-id             X-User-Id shared by generated devices (default generator-user)
+--seed                reproducible position/movement seed (default 42)
+--report-interval     statistics interval in seconds (default 5)
+```
+
+One `httpx.AsyncClient` and a bounded worker queue are reused for the whole run.
+Network and HTTP failures are counted without retries. Statistics aggregate
+request totals, successes/failures, status codes, throughput, and average,
+minimum, and maximum latency. Press Ctrl+C to stop and print the final summary.
+`--duration` stops scheduling new cycles at the deadline and lets the current
+bounded cycle finish, so a saturated final cycle may extend wall-clock runtime.
+
+At 10,000 devices and a three-second interval, the offered simulation rate is
+approximately 3,333 requests/second. This is an offered rate, not a guarantee
+that the backend or development machine can sustain it. If a cycle takes longer
+than its interval, the generator starts the next cycle immediately after the
+current bounded queue finishes instead of building an unbounded backlog.
+
 ## Database migrations
 
 Create a migration after adding domain models:
@@ -120,7 +158,3 @@ order is longitude followed by latitude.
 `GeofenceService.find_matching_zones` performs user-scoped containment matching
 inside PostGIS with `ST_DWithin(center, device_point, radius_meters)`. Geography
 distance arguments are interpreted in meters.
-
-## Next phases
-
-- Implement the 10,000-device asynchronous generator.

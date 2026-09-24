@@ -74,3 +74,18 @@ introduce operational complexity, eventual alert delivery, retry/idempotency
 requirements, and a period where the accepted HTTP response precedes alert
 processing. Those trade-offs should be accepted only after production metrics
 show sustained pool saturation or unacceptable request latency.
+
+## Generator validation
+
+The Phase 10 generator was run through the published Docker API endpoint, not
+the in-process ASGI test transport. A 100-device, one-second interval run for 10
+seconds completed 1,000 requests with 1,000 successes, no errors, 99.6
+requests/second, and 319.9 ms average latency.
+
+One complete 10,000-device cycle with concurrency 100 completed all 10,000
+requests with HTTP 201, no network/HTTP/database errors, 317.7 requests/second,
+312.6 ms average latency, and 31.5 seconds elapsed. PostgreSQL contained exactly
+10,000 rows for that generator user afterward. The requested three-second
+interval offers 3,333 requests/second, but this local Docker environment did not
+sustain that rate; bounded backpressure prevented overlapping cycles. This is a
+development-machine observation, not a production capacity result.
